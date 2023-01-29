@@ -6,6 +6,8 @@ public class GeoCoordToCart : MonoBehaviour
 {
     public static GeoCoordToCart Instance { get; private set; }
 
+    public float SphereScale => _sphereScale;
+
     [SerializeField] private float _sphereScale = 10;
     [SerializeField] private LocationPoint _locationPointPrefab;
 
