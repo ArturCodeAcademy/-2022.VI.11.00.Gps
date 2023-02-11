@@ -42,7 +42,8 @@ public class InputManager : MonoBehaviour
     private void Start()
     {
         _coordTransformator = GeoCoordToCart.Instance;
-    }
+        _pointsSlider.maxValue = _missionMaxPoints;
+	}
 
     private void Update()
     {
