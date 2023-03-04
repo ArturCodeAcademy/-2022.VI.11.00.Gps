@@ -1,6 +1,7 @@
 using TMPro;
 using Unity.VisualScripting;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 using static UnityEditor.FilePathAttribute;
 
@@ -16,10 +17,16 @@ public class InputManager : MonoBehaviour
     [SerializeField] private TMP_Text _coordText;
     [SerializeField] private TMP_Text _distanceText;
     [SerializeField] private GameObject _missionCompletionPanel;
+    [SerializeField] private GameObject _gameFinishButton;
+    [SerializeField] private GameObject _missionButton;
     [SerializeField] private Slider _pointsSlider;
     [SerializeField] private TMP_Text _pointsText;
+    [SerializeField] private TMP_Text _currentMissionText;
+    [SerializeField] private TMP_Text _totalPointsText;
+	[SerializeField] private GameObject _gameCompletionScreen;
+	[SerializeField] private GameObject _missionCompletionScreen;
 
-    [Header("Score")]
+	[Header("Score")]
     [SerializeField] private float _missionMaxPoints;
     [SerializeField] private float _missionMaxDistance;
 
@@ -34,15 +41,25 @@ public class InputManager : MonoBehaviour
     private bool _canChooseNewLocation = true;
     private GeoCoordToCart _coordTransformator;
 
-    private void Awake()
+	private int _currentMissionIndex;
+	private int _missionsCount;
+	private MissionController _missionController;
+
+	private void Awake()
     {
         Instance = this;
     }
 
     private void Start()
     {
-        _coordTransformator = GeoCoordToCart.Instance;
-        _pointsSlider.maxValue = _missionMaxPoints;
+		if (!SceneDataContainer.Instance.TryGetData(RoundSelectionPanel.COUNT_KEY, out _missionsCount))
+			_missionsCount = 5;
+		_missionController = MissionController.Instance;
+		_coordTransformator = GeoCoordToCart.Instance;
+		_pointsSlider.maxValue = _missionMaxPoints;
+		_pointsSlider.value = 0;
+		_pointsText.text = "0 Points";
+		PickNewMission();
 	}
 
     private void Update()
@@ -111,7 +128,37 @@ public class InputManager : MonoBehaviour
         _totalScore += calculatedScore;
     }
 
-    private float GetDistanceBetweenTwoPoints(Vector2 clickedLatLong, Vector2 actualLocationLatLong)
+	public void PickNewMission()
+	{
+		_currentMissionIndex++;
+		_canChooseNewLocation = true;
+		_missionCompletionPanel.SetActive(false);
+		_mapMarkerSphereTransform.gameObject.SetActive(false);
+		GeoCoord city = _missionController.GetRandomCity();
+		_tempMissionCoords = new Vector2(city.Latitude, city.Longitude);
+		_currentMissionText.text =
+			$"Location {_currentMissionIndex} / {_missionsCount} - {city.Label}";
+
+		if (_currentMissionIndex == _missionsCount)
+		{
+			_missionButton.SetActive(false);
+			_gameFinishButton.SetActive(true);
+		}
+	}
+
+	public void FinishGame()
+	{
+		_missionCompletionScreen.SetActive(false);
+		_gameCompletionScreen.SetActive(true);
+		_totalPointsText.text = $"Total points: {_totalScore}";
+	}
+
+	public void RestartGame()
+	{
+		SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
+	}
+
+	private float GetDistanceBetweenTwoPoints(Vector2 clickedLatLong, Vector2 actualLocationLatLong)
     {
         float lat1InRads = clickedLatLong.x * Mathf.PI / 180;
         float lat2InRads = actualLocationLatLong.x * Mathf.PI / 180;
